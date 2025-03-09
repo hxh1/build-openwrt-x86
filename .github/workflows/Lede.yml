@@ -16,10 +16,9 @@ on:
       REPO_BRANCH:
         description: '大雕源码'
         required: true
-        default: 'R24.10'
+        default: 'master'
         type: choice
         options:
-          - 'R24.10'
           - 'master'
       CONFIG_FILE:
         description: '请选择配置文件'
