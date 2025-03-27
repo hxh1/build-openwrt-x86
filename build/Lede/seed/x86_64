@@ -58,7 +58,6 @@ CONFIG_PACKAGE_luci-app-adguardhome=y
 CONFIG_PACKAGE_luci-app-openclash=y
 # CONFIG_PACKAGE_luci-app-ssr-plus is not set
 CONFIG_PACKAGE_luci-app-store=y
-CONFIG_PACKAGE_luci-app-nikki=y
 # CONFIG_PACKAGE_luci-app-vlmcsd is not set
 # CONFIG_PACKAGE_luci-app-vsftpd is not set
 # CONFIG_PACKAGE_luci-app-wol is not set
@@ -100,5 +99,5 @@ CONFIG_PACKAGE_unzip=y
 CONFIG_PACKAGE_xz=y
 CONFIG_PACKAGE_xz-utils=y
 CONFIG_PACKAGE_yq=y
-CONFIG_ZSTD_OPTIMIZE_O3=y
 CONFIG_TARGET_ROOTFS_PARTSIZE=950
+CONFIG_ZSTD_OPTIMIZE_O3=y
