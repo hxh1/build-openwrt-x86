@@ -22,6 +22,7 @@ on:
           - '24.10'
           - '23.05'
           - '19.07'
+          - 'fanchmwrt-24.10.4'
       CONFIG_FILE:
         description: '请选择配置文件'
         required: true
