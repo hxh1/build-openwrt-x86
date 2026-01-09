@@ -19,6 +19,7 @@ on:
           - 'Official'
           - 'Xwrt'
           - 'Mt798x'
+          - 'fanchmwrt'
       amlogic_model:
         description: '选择机型'
         required: true
