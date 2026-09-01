@@ -39,18 +39,19 @@ if [ "${OpenClash_Core}" = "1" ]; then
     CORE_DIR="${HOME_PATH}/files/etc/openclash/core"
     CORE_FILE="${CORE_DIR}/clash_meta"
     mkdir -p "${CORE_DIR}"
-    # 从最新 Release 自动取得 x86_64 compatible 内核的真实下载地址
-    CORE_URL="$(
-        curl -fsSL "https://api.github.com/repos/MetaCubeX/mihomo/releases/latest" |
-        jq -r '.assets[] |
-            select(.name | test("^mihomo-linux-amd64-compatible-v[0-9.]+\\.gz$")) |
-            .browser_download_url' |
-        head -n 1
-    )"
-    if [ -z "${CORE_URL}" ] || [ "${CORE_URL}" = "null" ]; then
-        echo "未找到 x86_64 Mihomo 内核下载地址"
-        exit 1
-    fi
+    # 从 Alpha 发布获取 x86_64 compatible 内核的真实下载地址
+CORE_URL="$(
+    curl -fsSL "https://api.github.com/repos/MetaCubeX/mihomo/releases/tags/Prerelease-Alpha" |
+    jq -r '.assets[] |
+        select(.name | test("^mihomo-linux-amd64-compatible-alpha-[0-9a-f]+\\.gz$")) |
+        .browser_download_url' |
+    head -n 1
+)"
+if [ -z "${CORE_URL}" ] || [ "${CORE_URL}" = "null" ]; then
+    echo "未找到 x86_64 Alpha Mihomo 内核下载地址"
+    exit 1
+fi
+echo "下载 Alpha Mihomo 内核：${CORE_URL}"
     echo "下载 Mihomo 内核：${CORE_URL}"
     curl -fL --retry 5 --retry-delay 5 \
         "${CORE_URL}" \
