@@ -32,7 +32,42 @@ export Enable_IPV4_function="0"             # 编译IPV4固件(1为启用命令,
 
 # 替换OpenClash的源码(默认master分支)
 export OpenClash_branch="1"                 # OpenClash的源码分别有【master分支】和【dev分支】(填0为关闭,填1为使用master分支,填2为使用dev分支,填入1或2的时候固件自动增加此插件)
-export OpenClash_Core="1" 
+# ===== OpenClash 内核开关 =====
+export OpenClash_Core="1"                   # 0 = 不打包 Mihomo 内核,# 1 = 打包 Mihomo 内核
+# ===== OpenClash 内核打包逻辑，新增 =====
+CORE_DIR="${GITHUB_WORKSPACE}/openwrt/files/etc/openclash/core"
+CORE_FILE="${CORE_DIR}/clash_meta"
+
+if [ "${OpenClash_Core}" = "1" ]; then
+    mkdir -p "${CORE_DIR}"
+
+    wget -q \
+      "https://github.com/MetaCubeX/mihomo/releases/latest/download/mihomo-linux-amd64-compatible.gz" \
+      -O /tmp/mihomo.gz
+
+    if [ "$?" -ne 0 ]; then
+        echo "下载 Mihomo 内核失败"
+        exit 1
+    fi
+
+    gzip -dc /tmp/mihomo.gz > "${CORE_FILE}"
+    chmod 755 "${CORE_FILE}"
+
+    # 确保 mihomo-meta 软件包被编译
+    sed -i '/CONFIG_PACKAGE_mihomo-meta=/d' .config
+    echo "CONFIG_PACKAGE_mihomo-meta=y" >> .config
+
+    echo "已启用 OpenClash 内核打包"
+else
+    # 删除预置内核
+    rm -f "${CORE_FILE}"
+
+    # 确保 mihomo-meta 不被编译
+    sed -i '/CONFIG_PACKAGE_mihomo-meta=/d' .config
+
+    echo "已关闭 OpenClash 内核打包"
+fi
+
 
 # 个性签名,默认增加年月日[$(TZ=UTC-8 date "+%Y.%m.%d")]
 export Customized_Information="$(TZ=UTC-8 date "+%Y.%m.%d")"  # 个性签名,你想写啥就写啥，(填0为不作修改)
@@ -57,7 +92,6 @@ export Ttyd_account_free_login="0"           # 设置ttyd免密登录(1为启用
 export Delete_unnecessary_items="0"          # 个别机型内一堆其他机型固件,删除其他机型的,只保留当前主机型固件(1为启用命令,填0为不作修改)
 export Disable_53_redirection="0"            # 删除DNS强制重定向53端口防火墙规则(个别源码本身不带此功能)(1为启用命令,填0为不作修改)
 export Cancel_running="0"                    # 取消路由器每天跑分任务(个别源码本身不带此功能)(1为启用命令,填0为不作修改)
-
 
 
 
