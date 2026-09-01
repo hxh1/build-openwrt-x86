@@ -34,38 +34,34 @@ export Enable_IPV4_function="0"             # 编译IPV4固件(1为启用命令,
 export OpenClash_branch="2"                 # OpenClash的源码分别有【master分支】和【dev分支】(填0为关闭,填1为使用master分支,填2为使用dev分支,填入1或2的时候固件自动增加此插件)
 # ===== OpenClash 内核开关 =====
 export OpenClash_Core="1"                   # 0 = 不打包 Mihomo 内核,# 1 = 打包 Mihomo 内核
-# ===== OpenClash 内核打包逻辑，新增 =====
-CORE_DIR="${GITHUB_WORKSPACE}/openwrt/files/etc/openclash/core"
-CORE_FILE="${CORE_DIR}/clash_meta"
-
+# ===== OpenClash Mihomo 内核打包,0 = 不打包；1 = 打包 x86_64 Mihomo 内核
 if [ "${OpenClash_Core}" = "1" ]; then
+    CORE_DIR="${HOME_PATH}/files/etc/openclash/core"
+    CORE_FILE="${CORE_DIR}/clash_meta"
     mkdir -p "${CORE_DIR}"
-
-    wget -q \
-      "https://github.com/MetaCubeX/mihomo/releases/latest/download/mihomo-linux-amd64-compatible.gz" \
-      -O /tmp/mihomo.gz
-
-    if [ "$?" -ne 0 ]; then
-        echo "下载 Mihomo 内核失败"
+    # 从最新 Release 自动取得 x86_64 compatible 内核的真实下载地址
+    CORE_URL="$(
+        curl -fsSL "https://api.github.com/repos/MetaCubeX/mihomo/releases/latest" |
+        jq -r '.assets[] |
+            select(.name | test("^mihomo-linux-amd64-compatible-v[0-9.]+\\.gz$")) |
+            .browser_download_url' |
+        head -n 1
+    )"
+    if [ -z "${CORE_URL}" ] || [ "${CORE_URL}" = "null" ]; then
+        echo "未找到 x86_64 Mihomo 内核下载地址"
         exit 1
     fi
-
+    echo "下载 Mihomo 内核：${CORE_URL}"
+    curl -fL --retry 5 --retry-delay 5 \
+        "${CORE_URL}" \
+        -o /tmp/mihomo.gz
+    gzip -t /tmp/mihomo.gz
     gzip -dc /tmp/mihomo.gz > "${CORE_FILE}"
     chmod 755 "${CORE_FILE}"
-
-    # 确保 mihomo-meta 软件包被编译
-    sed -i '/CONFIG_PACKAGE_mihomo-meta=/d' .config
-    echo "CONFIG_PACKAGE_mihomo-meta=y" >> .config
-
-    echo "已启用 OpenClash 内核打包"
+    echo "Mihomo 内核已打包：${CORE_FILE}"
+    ls -lh "${CORE_FILE}"
 else
-    # 删除预置内核
-    rm -f "${CORE_FILE}"
-
-    # 确保 mihomo-meta 不被编译
-    sed -i '/CONFIG_PACKAGE_mihomo-meta=/d' .config
-
-    echo "已关闭 OpenClash 内核打包"
+    echo "OpenClash_Core=0，跳过 Mihomo 内核打包"
 fi
 
 
