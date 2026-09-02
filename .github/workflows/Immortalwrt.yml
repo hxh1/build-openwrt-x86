@@ -290,22 +290,6 @@ jobs:
     - name: 运行其他和SSH远程(make menuconfig)
       id: info
       uses: 281677160/common@need
-
-    - name: 编译前更新 OpenClash Zashboard
-      run: |
-        cd openwrt
-        OC_ZASHBOARD_DIR="$(find . -type d -path '*/luci-app-openclash/root/usr/share/openclash/ui/zashboard' -print -quit 2>/dev/null)"
-        test -n "${OC_ZASHBOARD_DIR}"
-        OC_ZASHBOARD_TMP="$(mktemp -d /tmp/zashboard.XXXXXX)"
-        curl -fL --retry 5 --retry-delay 5 "https://codeload.github.com/Zephyruso/zashboard/zip/refs/heads/gh-pages-cdn-fonts" -o "${OC_ZASHBOARD_TMP}/zashboard.zip"
-        unzip -q "${OC_ZASHBOARD_TMP}/zashboard.zip" -d "${OC_ZASHBOARD_TMP}"
-        OC_ZASHBOARD_SOURCE="${OC_ZASHBOARD_TMP}/zashboard-gh-pages-cdn-fonts"
-        test -s "${OC_ZASHBOARD_SOURCE}/index.html"
-        rm -rf "${OC_ZASHBOARD_DIR}"
-        mkdir -p "${OC_ZASHBOARD_DIR}"
-        cp -rf "${OC_ZASHBOARD_SOURCE}/." "${OC_ZASHBOARD_DIR}/"
-        rm -rf "${OC_ZASHBOARD_TMP}"
-        echo "已更新编译内置的 Zashboard: ${OC_ZASHBOARD_DIR}"
         
     - name: 编译信息
       continue-on-error: true
