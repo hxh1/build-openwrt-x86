@@ -32,38 +32,50 @@ export Enable_IPV4_function="0"             # 编译IPV4固件(1为启用命令,
 
 # 替换OpenClash的源码(默认master分支)
 export OpenClash_branch="2"                 # OpenClash的源码分别有【master分支】和【dev分支】(填0为关闭,填1为使用master分支,填2为使用dev分支,填入1或2的时候固件自动增加此插件)
-# ===== OpenClash 内核开关 =====
-# export OpenClash_Core="1"                   # 0 = 不打包 Mihomo 内核,# 1 = 打包 Mihomo 内核
-# ===== OpenClash Mihomo 内核打包,0 = 不打包；1 = 打包 x86_64 Mihomo 内核
-if [ export OpenClash_branch="2" ]; then
-    CORE_DIR="${HOME_PATH}/files/etc/openclash/core"
-    CORE_FILE="${CORE_DIR}/clash_meta"
-    mkdir -p "${CORE_DIR}"
-    # 从 Alpha 发布获取 x86_64 compatible 内核的真实下载地址
-CORE_URL="$(
-    curl -fsSL "https://api.github.com/repos/MetaCubeX/mihomo/releases/tags/Prerelease-Alpha" |
-    jq -r '.assets[] |
-        select(.name | test("^mihomo-linux-amd64-compatible-alpha-[0-9a-f]+\\.gz$")) |
-        .browser_download_url' |
-    head -n 1
-)"
-if [ -z "${CORE_URL}" ] || [ "${CORE_URL}" = "null" ]; then
-    echo "未找到 x86_64 Alpha Mihomo 内核下载地址"
-    exit 1
-fi
-echo "下载 Alpha Mihomo 内核：${CORE_URL}"
-    echo "下载 Mihomo 内核：${CORE_URL}"
-    curl -fL --retry 5 --retry-delay 5 \
-        "${CORE_URL}" \
-        -o /tmp/mihomo.gz
-    gzip -t /tmp/mihomo.gz
-    gzip -dc /tmp/mihomo.gz > "${CORE_FILE}"
-    chmod 755 "${CORE_FILE}"
-    echo "Mihomo 内核已打包：${CORE_FILE}"
-    ls -lh "${CORE_FILE}"
-else
-    echo "OpenClash_branch=0，跳过 Mihomo 内核打包"
-fi
+# ===== OpenClash 内核打包开关 =====
+# OpenClash_branch=0：不打包内核
+# OpenClash_branch=1/2：打包 x86_64 Alpha Mihomo 内核
+case "${OpenClash_branch}" in
+    1|2)
+        CORE_DIR="${HOME_PATH}/files/etc/openclash/core"
+        CORE_FILE="${CORE_DIR}/clash_meta"
+        mkdir -p "${CORE_DIR}"
+        CORE_URL="$(
+            curl -fsSL \
+                "https://api.github.com/repos/MetaCubeX/mihomo/releases/tags/Prerelease-Alpha" |
+            jq -r '
+                .assets[] |
+                select(.name | test("^mihomo-linux-amd64-compatible-alpha-[0-9a-f]+\\.gz$")) |
+                .browser_download_url
+            ' |
+            head -n 1
+        )"
+
+        if [ -z "${CORE_URL}" ] || [ "${CORE_URL}" = "null" ]; then
+            echo "未找到 x86_64 Alpha Mihomo 内核下载地址"
+            exit 1
+        fi
+        echo "下载 Alpha Mihomo 内核：${CORE_URL}"
+        curl -fL --retry 5 --retry-delay 5 \
+            "${CORE_URL}" \
+            -o /tmp/mihomo.gz
+        if [ ! -s /tmp/mihomo.gz ]; then
+            echo "Mihomo 内核下载失败"
+            exit 1
+        fi
+        gzip -t /tmp/mihomo.gz
+        gzip -dc /tmp/mihomo.gz > "${CORE_FILE}"
+        chmod 755 "${CORE_FILE}"
+        echo "Mihomo Alpha 内核已打包：${CORE_FILE}"
+        ls -lh "${CORE_FILE}"
+        ;;
+    0)
+        echo "OpenClash_branch=0，跳过 Mihomo 内核打包"
+        ;;
+    *)
+        echo "OpenClash_branch=${OpenClash_branch} 无效，跳过 Mihomo 内核打包"
+        ;;
+esac
 
 # 个性签名,默认增加年月日[$(TZ=UTC-8 date "+%Y.%m.%d")]
 export Customized_Information="$(TZ=UTC-8 date "+%Y.%m.%d")"  # 个性签名,你想写啥就写啥，(填0为不作修改)
