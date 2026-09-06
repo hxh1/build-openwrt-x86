@@ -32,9 +32,10 @@ export Enable_IPV4_function="0"             # 编译IPV4固件(1为启用命令,
 
 # 替换OpenClash的源码(默认master分支)
 export OpenClash_branch="2"                 # OpenClash的源码分别有【master分支】和【dev分支】(填0为关闭,填1为使用master分支,填2为使用dev分支,填入1或2的时候固件自动增加此插件)
-# ===== OpenClash 内核打包开关 =====
-# OpenClash_branch=0：不打包内核
-# OpenClash_branch=1/2：打包 x86_64 Alpha Mihomo 内核
+# ===== OpenClash 内核打包 =====
+# OpenClash_branch=0：不打包
+# OpenClash_branch=1/2：打包 Alpha linux-amd64-v1
+
 case "${OpenClash_branch}" in
     1|2)
         CORE_DIR="${HOME_PATH}/files/etc/openclash/core"
@@ -45,17 +46,17 @@ case "${OpenClash_branch}" in
                 "https://api.github.com/repos/MetaCubeX/mihomo/releases/tags/Prerelease-Alpha" |
             jq -r '
                 .assets[] |
-                select(.name | test("^mihomo-linux-amd64-compatible-alpha-[0-9a-f]+\\.gz$")) |
+                select(.name | test("^mihomo-linux-amd64-v1.*\\.gz$")) |
                 .browser_download_url
             ' |
             head -n 1
         )"
-
         if [ -z "${CORE_URL}" ] || [ "${CORE_URL}" = "null" ]; then
-            echo "未找到 x86_64 Alpha Mihomo 内核下载地址"
+            echo "未找到 linux-amd64-v1 Alpha 内核"
             exit 1
         fi
-        echo "下载 Alpha Mihomo 内核：${CORE_URL}"
+        echo "下载 linux-amd64-v1 Alpha 内核：${CORE_URL}"
+
         curl -fL --retry 5 --retry-delay 5 \
             "${CORE_URL}" \
             -o /tmp/mihomo.gz
@@ -66,14 +67,14 @@ case "${OpenClash_branch}" in
         gzip -t /tmp/mihomo.gz
         gzip -dc /tmp/mihomo.gz > "${CORE_FILE}"
         chmod 755 "${CORE_FILE}"
-        echo "Mihomo Alpha 内核已打包：${CORE_FILE}"
+        echo "Mihomo linux-amd64-v1 内核已打包：${CORE_FILE}"
         ls -lh "${CORE_FILE}"
         ;;
     0)
-        echo "OpenClash_branch=0，跳过 Mihomo 内核打包"
+        echo "OpenClash_branch=0，跳过内核打包"
         ;;
     *)
-        echo "OpenClash_branch=${OpenClash_branch} 无效，跳过 Mihomo 内核打包"
+        echo "OpenClash_branch=${OpenClash_branch} 无效，跳过内核打包"
         ;;
 esac
 
