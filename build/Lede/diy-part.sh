@@ -31,8 +31,48 @@ export Enable_IPV6_function="0"             # 编译IPV6固件(1为启用命令,
 export Enable_IPV4_function="0"             # 编译IPV4固件(1为启用命令,填0为不作修改)(如果跟Enable_IPV6_function一起启用命令的话,此命令会自动关闭)
 
 # 替换OpenClash的源码(默认master分支)
-export OpenClash_branch="1"                 # OpenClash的源码分别有【master分支】和【dev分支】(填0为关闭,填1为使用master分支,填2为使用dev分支,填入1或2的时候固件自动增加此插件)
+export OpenClash_branch="2"                 # OpenClash的源码分别有【master分支】和【dev分支】(填0为关闭,填1为使用master分支,填2为使用dev分支,填入1或2的时候固件自动增加此插件)
+case "${OpenClash_branch}" in
+    1|2)
+        CORE_DIR="${HOME_PATH}/files/etc/openclash/core"
+        CORE_FILE="${CORE_DIR}/clash_meta"
+        mkdir -p "${CORE_DIR}"
+        CORE_URL="$(
+            curl -fsSL \
+                "https://api.github.com/repos/MetaCubeX/mihomo/releases/tags/Prerelease-Alpha" |
+            jq -r '
+                .assets[] |
+                select(.name | test("^mihomo-linux-amd64-v1.*\\.gz$")) |
+                .browser_download_url
+            ' |
+            head -n 1
+        )"
+        if [ -z "${CORE_URL}" ] || [ "${CORE_URL}" = "null" ]; then
+            echo "未找到 linux-amd64-v1 Alpha 内核"
+            exit 1
+        fi
+        echo "下载 linux-amd64-v1 Alpha 内核：${CORE_URL}"
 
+        curl -fL --retry 5 --retry-delay 5 \
+            "${CORE_URL}" \
+            -o /tmp/mihomo.gz
+        if [ ! -s /tmp/mihomo.gz ]; then
+            echo "Mihomo 内核下载失败"
+            exit 1
+        fi
+        gzip -t /tmp/mihomo.gz
+        gzip -dc /tmp/mihomo.gz > "${CORE_FILE}"
+        chmod 755 "${CORE_FILE}"
+        echo "Mihomo linux-amd64-v1 内核已打包：${CORE_FILE}"
+        ls -lh "${CORE_FILE}"
+        ;;
+    0)
+        echo "OpenClash_branch=0，跳过内核打包"
+        ;;
+    *)
+        echo "OpenClash_branch=${OpenClash_branch} 无效，跳过内核打包"
+        ;;
+esac
 # 个性签名,默认增加年月日[$(TZ=UTC-8 date "+%Y.%m.%d")]
 export Customized_Information="$(TZ=UTC-8 date "+%Y.%m.%d")"  # 个性签名,你想写啥就写啥，(填0为不作修改)
 
@@ -56,15 +96,6 @@ export Ttyd_account_free_login="0"           # 设置ttyd免密登录(1为启用
 export Delete_unnecessary_items="0"          # 个别机型内一堆其他机型固件,删除其他机型的,只保留当前主机型固件(1为启用命令,填0为不作修改)
 export Disable_53_redirection="0"            # 删除DNS强制重定向53端口防火墙规则(个别源码本身不带此功能)(1为启用命令,填0为不作修改)
 export Cancel_running="0"                    # 取消路由器每天跑分任务(个别源码本身不带此功能)(1为启用命令,填0为不作修改)
-
-
-# 晶晨CPU系列打包固件设置(不懂请看说明)
-export amlogic_model="s905d"
-export amlogic_kernel="6.1.120_6.12.15"
-export auto_kernel="true"
-export rootfs_size="512/2560"
-export kernel_usage="stable"
-
 
 # 修改插件名字
 grep -rl '"终端"' . | xargs -r sed -i 's?"终端"?"TTYD"?g'
@@ -90,6 +121,33 @@ openwrt-x86-64-generic-kernel.bin
 openwrt-x86-64-generic.manifest
 openwrt-x86-64-generic-squashfs-rootfs.img.gz
 EOF
+
+# 在线更新时，删除不想保留固件的某个文件，在EOF跟EOF之间加入删除代码，记住这里对应的是固件的文件路径，比如： rm -rf /etc/config/luci
+cat >>$DELETE <<-EOF
+EOF
+
+# 编译时替换 OpenClash 内置的 Zashboard（跟随 gh-pages-cdn-fonts 最新提交）
+OC_ZASHBOARD_DIR="$(find . -type d -path '*/luci-app-openclash/root/usr/share/openclash/ui/zashboard' -print -quit 2>/dev/null)"
+if [ -z "${OC_ZASHBOARD_DIR}" ]; then
+    echo "未找到 OpenClash 内置 Zashboard 目录"
+    exit 1
+fi
+OC_ZASHBOARD_TMP="$(mktemp -d /tmp/zashboard.XXXXXX)"
+curl -fL --retry 5 --retry-delay 5 \
+    "https://codeload.github.com/Zephyruso/zashboard/zip/refs/heads/gh-pages-cdn-fonts" \
+    -o "${OC_ZASHBOARD_TMP}/zashboard.zip"
+python3 -c "import sys,zipfile;zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])" "${OC_ZASHBOARD_TMP}/zashboard.zip" "${OC_ZASHBOARD_TMP}"
+OC_ZASHBOARD_SOURCE="${OC_ZASHBOARD_TMP}/zashboard-gh-pages-cdn-fonts"
+if [ ! -s "${OC_ZASHBOARD_SOURCE}/index.html" ]; then
+    echo "Zashboard 下载内容无效"
+    rm -rf "${OC_ZASHBOARD_TMP}"
+    exit 1
+fi
+rm -rf "${OC_ZASHBOARD_DIR}"
+mkdir -p "${OC_ZASHBOARD_DIR}"
+cp -rf "${OC_ZASHBOARD_SOURCE}/." "${OC_ZASHBOARD_DIR}/"
+rm -rf "${OC_ZASHBOARD_TMP}"
+echo "已更新编译内置的 Zashboard: ${OC_ZASHBOARD_DIR}"
 
 # 在线更新时，删除不想保留固件的某个文件，在EOF跟EOF之间加入删除代码，记住这里对应的是固件的文件路径，比如： rm -rf /etc/config/luci
 cat >>$DELETE <<-EOF
