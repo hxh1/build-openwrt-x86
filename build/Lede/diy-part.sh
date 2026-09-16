@@ -32,6 +32,10 @@ export Enable_IPV4_function="0"             # 编译IPV4固件(1为启用命令,
 
 # 替换OpenClash的源码(默认master分支)
 export OpenClash_branch="2"                 # OpenClash的源码分别有【master分支】和【dev分支】(填0为关闭,填1为使用master分支,填2为使用dev分支,填入1或2的时候固件自动增加此插件)
+# ===== OpenClash 内核打包 =====
+# OpenClash_branch=0：不打包
+# OpenClash_branch=1/2：打包 Alpha linux-amd64-v1
+
 case "${OpenClash_branch}" in
     1|2)
         CORE_DIR="${HOME_PATH}/files/etc/openclash/core"
@@ -73,6 +77,7 @@ case "${OpenClash_branch}" in
         echo "OpenClash_branch=${OpenClash_branch} 无效，跳过内核打包"
         ;;
 esac
+
 # 个性签名,默认增加年月日[$(TZ=UTC-8 date "+%Y.%m.%d")]
 export Customized_Information="$(TZ=UTC-8 date "+%Y.%m.%d")"  # 个性签名,你想写啥就写啥，(填0为不作修改)
 
@@ -120,10 +125,6 @@ profiles.json
 openwrt-x86-64-generic-kernel.bin
 openwrt-x86-64-generic.manifest
 openwrt-x86-64-generic-squashfs-rootfs.img.gz
-EOF
-
-# 在线更新时，删除不想保留固件的某个文件，在EOF跟EOF之间加入删除代码，记住这里对应的是固件的文件路径，比如： rm -rf /etc/config/luci
-cat >>$DELETE <<-EOF
 EOF
 
 # 编译时替换 OpenClash 内置的 Zashboard（跟随 gh-pages-cdn-fonts 最新提交）
