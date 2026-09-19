@@ -73,6 +73,30 @@ jobs:
  
     - name: 运行自定义文件和其他
       uses: 281677160/common@need
+
+    - name: 强制移除 QModem
+      run: |
+        cd openwrt
+
+        # 删除 QModem 整套源码
+        rm -rf feeds/danshui/luci-app-qmodem
+
+        # 删除 feeds install 生成的 QModem 软件包链接
+        find package/feeds -type l -lname '*luci-app-qmodem*' -delete
+        find package/feeds -type l -lname '*qmodem*' -delete
+
+        # 清除已有配置和软件包索引
+        sed -i -E '/CONFIG_PACKAGE_.*qmodem/d' .config
+        sed -i -E '/CONFIG_PACKAGE_sms-forwarder-next/d' .config
+        rm -rf tmp
+
+        make defconfig
+
+        # 验证，发现仍被选中就直接终止编译
+        if grep -Ei '^CONFIG_PACKAGE_.*(qmodem|sms-forwarder-next).*=y' .config; then
+          echo "错误：QModem 仍然被选中"
+          exit 1
+        fi
         
     - name: 编译信息
       continue-on-error: true
